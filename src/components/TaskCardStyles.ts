@@ -33,27 +33,32 @@ export const Card = styled.div<CardProps>`
 export const CardHeader = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  text-align: left;
+  gap: 4px;
+  text-align: center;
 
   h4 {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
     color: ${colors.text};
-    line-height: 1.1;
+    white-space: nowrap;    
+    overflow: hidden;
+    text-overflow: ellipsis;   
   }
 
   p {
     margin: 0;
     font-size: 12px;
     color: ${colors.muted};
-    line-height: 1.1;
-    max-height: 36px;
+    
+    display: -webkit-box;    
+    -webkit-line-clamp: 2;      
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 `;
+
 
 export const CardActions = styled.div`
   display: flex;

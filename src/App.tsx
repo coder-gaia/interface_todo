@@ -1,12 +1,12 @@
 import './App.css'
 import BoardPage from './pages/BoardPage'
-import {GlobalStyle} from './styles/global'
+import Header from './components/Header'
 
 function App() {
 
   return (
     <>
-      <GlobalStyle />
+      <Header/>
       <BoardPage/>
     </>
   )

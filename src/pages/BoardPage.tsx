@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import SearchBar from '../components/SearchBar';
 import {Modal} from '../components/Modal'
-import {BoardContainer, Column, FormSelect, FormButton, CreateTaskForm, FormInput, FormTextarea, Header, Button, Columns, ColumnHeader } from './BoardPageStyles';
+import {BoardContainer, Column, FormSelect, FormButton, CreateTaskForm, FormInput, FormTextarea, BoardHeader, Button, Columns, ColumnHeader, ColumnsWrapper, TaskList } from './BoardPageStyles';
 import TaskCard from '../components/TaskCard';
+import PriorityChart from '../components/PriorityChart';
 
 interface Task {
   id: string;
@@ -30,6 +31,10 @@ const BoardPage: React.FC = () => {
   description: '',
   priority: 'low',
 });
+
+  const visibleCount = 3;
+  const [visibleStartTodo, setVisibleStartTodo] = useState(0);
+  const [visibleStartDone, setVisibleStartDone] = useState(0);
 
   function openEditModal(task: Task) {
   setSelectedTask(task);
@@ -132,10 +137,10 @@ async function handleDeleteTask(id: string) {
 
 return (
   <BoardContainer>
-    <Header>
+    <BoardHeader>
       <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
       <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
-    </Header>
+    </BoardHeader>
 
     {isModalOpen && (
       <Modal onClose={() => setIsModalOpen(false)}>
@@ -171,30 +176,79 @@ return (
       </Modal>
     )}
 
-<Columns>
+<ColumnsWrapper>
   <Column>
     <ColumnHeader>To Do</ColumnHeader>
-  {filteredTasks
-  .filter(t => t.status === 'todo')
-  .map(t => (
-    <TaskCard
-      key={t.id}
-      id={t.id}
-      title={t.title}
-      description={t.description || ''}
-      priority={t.priority}
-      status={t.status}
-      onComplete={() => handleCompleteTask(t.id)}  
-      onEdit={() => openEditModal(t)}
-      onDelete={() => handleDeleteTask(t.id)}
-    />
-  ))}
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2px' }}>
+    <button
+      onClick={() => setVisibleStartTodo(prev => Math.max(prev - visibleCount, 0))}
+      disabled={visibleStartTodo === 0}
+    >
+      ↑
+    </button>
+    <button
+      onClick={() =>
+        setVisibleStartTodo(prev =>
+          Math.min(
+            prev + visibleCount,
+            filteredTasks.filter(t => t.status === 'todo').length - visibleCount
+          )
+        )
+      }
+      disabled={visibleStartTodo + visibleCount >= filteredTasks.filter(t => t.status === 'todo').length}
+    >
+      ↓
+    </button>
+  </div>
+    <TaskList>
+      {filteredTasks
+        .filter(t => t.status === 'todo')
+        .slice(visibleStartTodo, visibleStartTodo + visibleCount)
+        .map(t => (
+          <TaskCard
+            key={t.id}
+            id={t.id}
+            title={t.title}
+            description={t.description || ''}
+            priority={t.priority}
+            status={t.status}
+            onComplete={() => handleCompleteTask(t.id)}  
+            onEdit={() => openEditModal(t)}
+            onDelete={() => handleDeleteTask(t.id)}
+          />
+      ))}
+    </TaskList>
   </Column>
 
-  <Column>
-    <ColumnHeader>Done</ColumnHeader>
+<Column>
+  <ColumnHeader>Done</ColumnHeader>
+
+  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2px' }}>
+    <button
+      onClick={() => setVisibleStartDone(prev => Math.max(prev - visibleCount, 0))}
+      disabled={visibleStartDone === 0}
+    >
+      ↑
+    </button>
+    <button
+      onClick={() =>
+        setVisibleStartDone(prev =>
+          Math.min(
+            prev + visibleCount,
+            filteredTasks.filter(t => t.status === 'done').length - visibleCount
+          )
+        )
+      }
+      disabled={visibleStartDone + visibleCount >= filteredTasks.filter(t => t.status === 'done').length}
+    >
+      ↓
+    </button>
+  </div>
+
+  <TaskList>
     {filteredTasks
       .filter(t => t.status === 'done')
+      .slice(visibleStartDone, visibleStartDone + visibleCount)
       .map(t => (
         <TaskCard
           key={t.id}
@@ -203,8 +257,15 @@ return (
           onDelete={() => handleDeleteTask(t.id)}
         />
       ))}
-  </Column>
-</Columns>
+  </TaskList>
+</Column>
+
+<Column>
+  <ColumnHeader>Priorities</ColumnHeader>
+  <PriorityChart tasks={tasks} />
+</Column>
+</ColumnsWrapper>
+
 {editTaskModalOpen && selectedTask && (
   <Modal onClose={closeEditModal}>
     <CreateTaskForm

@@ -2,24 +2,23 @@ import styled from "styled-components";
 import {borderRadius, colors, shadow, spacing, typography} from '../styles/colors'
 
 export const BoardContainer = styled.div`
-  background: ${colors.background};
-  padding: ${spacing.lg};
+  background: #1B2A49;
+  padding: ${spacing.sm};
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 `;
 
-export const Header = styled.div`
+export const BoardHeader = styled.div`
   display: flex;
   gap: ${spacing.md};
-  //justify-content: space-between;
   align-items: center;
   margin-bottom: ${spacing.lg};
 `;
 
 export const Button = styled.button`
   padding: ${spacing.sm} ${spacing.md};
-  background-color: ${colors.primary};
+  background-color: #3A4A6B;
   height: 50px;
   color: ${colors.secondary};
   font-family: ${typography.fontFamily};
@@ -37,26 +36,54 @@ export const Button = styled.button`
 
 export const ColumnsWrapper = styled.div`
   display: flex;
-  gap: ${spacing.lg};
+  flex-direction: column;
+  gap: ${spacing.md};
   margin-top: ${spacing.md};
+
+  button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: ${colors.text};
+  margin: 4px 0;
+}
+
+button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+  @media(min-width: 768px) {
+    flex-direction: row;
+    gap: ${spacing.lg};
+    align-items: flex-start;
+    width: 100%;
+    overflow-x: auto; 
+  }
 `;
 
 export const Columns = styled.div`
   display: flex;
-  gap: ${spacing.lg}; 
+  gap: ${spacing.lg};
   width: 100%;
 `;
 
 export const Column = styled.div`
-  flex: 1;
-  background-color: ${colors.background};
+  background: ${colors.secondary};
+  border-radius: ${borderRadius.lg};
   padding: ${spacing.md};
-  border-radius: ${borderRadius.md};
   box-shadow: ${shadow.light};
 
   display: flex;
   flex-direction: column;
-  gap: ${spacing.sm}; 
+  align-items: center; 
+  min-width: 320px;
+
+  @media(min-width: 768px) {
+    flex: 1;
+    max-width: 350px; 
+  }
 `;
 
 export const ColumnHeader = styled.h3`
@@ -65,12 +92,17 @@ export const ColumnHeader = styled.h3`
   font-weight: ${typography.fontWeight.bold};
   margin-bottom: ${spacing.md};
   color: ${colors.text};
+  text-align: center;
 `;
 
 export const TaskList = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: ${spacing.sm};
+  width: 100%;
+  overflow-y: auto; 
+  max-height: 500px;
 `;
 
 export const CreateTaskForm = styled.form`

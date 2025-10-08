@@ -10,12 +10,16 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    background-color: ${colors.background};
+    background: #1B2A49;
     color: ${colors.text};
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   button {
     cursor: pointer;
     font-family: ${typography.fontFamily};
   }
+
+  img { max-width: 100%; display: block; }
 `;
