@@ -1,9 +1,24 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import SearchBar from '../components/SearchBar';
-import {Modal} from '../components/Modal'
-import {BoardContainer, Column, FormSelect, FormButton, CreateTaskForm, FormInput, FormTextarea, BoardHeader, Button, Columns, ColumnHeader, ColumnsWrapper, TaskList } from './BoardPageStyles';
+import { Modal } from '../components/Modal';
+import {
+  BoardContainer,
+  Column,
+  FormSelect,
+  FormButton,
+  CreateTaskForm,
+  FormInput,
+  FormTextarea,
+  BoardHeader,
+  Button,
+  ColumnsWrapper,
+  TaskList,
+  ColumnHeader
+} from './BoardPageStyles';
 import TaskCard from '../components/TaskCard';
 import PriorityChart from '../components/PriorityChart';
+import { useAuth } from '../contexts/AuthContext';
+import ManageMembersModal from '../components/ManageMembersModal';
 
 interface Task {
   id: string;
@@ -20,295 +35,275 @@ interface NewTaskData {
 }
 
 const BoardPage: React.FC = () => {
+  const { token, user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [search, setSearch] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [boards, setBoards] = useState<any[]>([]);
+  const [selectedBoard, setSelectedBoard] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [editTaskModalOpen, setEditTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [newTask, setNewTask] = useState<NewTaskData>({
-  title: '',
-  description: '',
-  priority: 'low',
-});
+  const [newTask, setNewTask] = useState<NewTaskData>({ title: '', description: '', priority: 'low' });
 
   const visibleCount = 3;
   const [visibleStartTodo, setVisibleStartTodo] = useState(0);
   const [visibleStartDone, setVisibleStartDone] = useState(0);
 
+  async function fetchWithAuth(path: string, options?: any) {
+    if (!token) throw new Error('No token available');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options?.headers || {}),
+      Authorization: `Bearer ${token}`
+    };
+    const res = await fetch(`http://localhost:3333${path}`, { ...options, headers });
+    if (!res.ok) {
+      const error: any = new Error('API Error');
+      error.status = res.status;
+      throw error;
+    }
+    return res.json();
+  }
+
   function openEditModal(task: Task) {
-  setSelectedTask(task);
-  setEditTaskModalOpen(true);
-}
+    setSelectedTask(task);
+    setEditTaskModalOpen(true);
+  }
 
   function closeEditModal() {
-  setSelectedTask(null);
-  setEditTaskModalOpen(false);
-}
+    setSelectedTask(null);
+    setEditTaskModalOpen(false);
+  }
 
-async function handleUpdateTask(updatedTask: Partial<Task> & { id: string }) {
+  async function loadBoards() {
+    setLoading(true);
+    try {
+      const data = await fetchWithAuth('/boards');
+      setBoards(data || []);
+      if (data && data.length && !selectedBoard) setSelectedBoard(data[0].id);
+    } catch (err: any) {
+      console.error('Failed to load boards', err);
+      if (err.status === 401) alert('You must be logged in to access boards.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadTasks(boardId?: string) {
+    if (!boardId) {
+      setTasks([]);
+      return;
+    }
+    try {
+      const data = await fetchWithAuth(`/tasks?boardId=${boardId}`);
+      setTasks(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch tasks:', err);
+      if (err.status === 401) alert('You must be logged in to see the tasks.');
+      else if (err.status === 404) alert('The owner needs to assign you a role to access tasks.');
+    }
+  }
+
+  useEffect(() => {
+    if (user) loadBoards();
+  }, [user]);
+
+  useEffect(() => {
+    if (user && selectedBoard) loadTasks(selectedBoard);
+  }, [user, selectedBoard]);
+
+async function handleUpdateTask(task: Task) {
+  if (!selectedBoard) return alert("Select a board first");
   try {
-    const response = await fetch(`http://localhost:3333/tasks/${updatedTask.id}`, {
+    const updated = await fetchWithAuth(`/tasks/${task.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updatedTask),
+      body: JSON.stringify({
+        title: task.title,
+        description: task.description || '',
+        priority: task.priority,
+        status: task.status,
+        boardId: selectedBoard
+      })
     });
-
-    if (!response.ok) throw new Error('Failed to update task');
-
-    const updated = await response.json();
-
-    setTasks(prev =>
-      prev.map(t => (t.id === updated.id ? updated : t))
-    );
-
+    setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)));
     closeEditModal();
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     alert('Failed to update task');
   }
 }
 
-async function handleDeleteTask(id: string) {
+async function handleDeleteTask(taskId: string) {
+  if (!selectedBoard) return alert("Select a board first");
   try {
-    const res = await fetch(`http://localhost:3333/tasks/${id}`, { method: 'DELETE' });
+    const res = await fetch(`http://localhost:3333/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ boardId: selectedBoard })
+    });
+
     if (!res.ok) throw new Error('Failed to delete task');
-    setTasks(prev => prev.filter(t => t.id !== id));
+
+    setTasks(prev => prev.filter(t => t.id !== taskId));
   } catch (err) {
     console.error(err);
     alert('Failed to delete task');
   }
 }
+
+
   const handleCreateTask = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const res = await fetch('http://localhost:3333/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newTask, status: 'todo' }),
-    });
-    const createdTask: Task = await res.json();
-    setTasks(prev => [...prev, createdTask]);
-    setNewTask({ title: '', description: '', priority: 'low' });
-  } catch (err) {
-    console.error('Failed to create task:', err);
-  }
-};
-
-  useEffect(() => {
-    async function fetchTasks() {
-      try {
-        const res = await fetch('http://localhost:3333/tasks');
-        const data = await res.json();
-        setTasks(data);
-      } catch (err) {
-        console.error('Failed to fetch tasks:', err);
-      } finally {
-        setLoading(false);
-      }
+    e.preventDefault();
+    if (!selectedBoard) {
+      alert('Select a board first');
+      return;
     }
+    try {
+      const createdTask = await fetchWithAuth('/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ ...newTask, status: 'todo', boardId: selectedBoard })
+      });
+      setTasks(prev => [...prev, createdTask]);
+      setNewTask({ title: '', description: '', priority: 'low' });
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    }
+  };
 
-    fetchTasks();
-  }, []);
-
-  async function handleCompleteTask(id: string) {
+async function handleCompleteTask(taskId: string) {
+  if (!selectedBoard) return alert("Select a board first");
   try {
-    const res = await fetch(`http://localhost:3333/tasks/${id}`, {
+    await fetchWithAuth(`/tasks/${taskId}`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ status: 'done' })
+      body: JSON.stringify({ status: 'done', boardId: selectedBoard })
     });
-    if (!res.ok) throw new Error('Failed to complete task');
-    const updated = await res.json();
-    setTasks(prev => prev.map(t => (t.id === id ? updated : t)));
+    loadTasks(selectedBoard);
   } catch (err) {
     console.error(err);
-    alert('Failed to mark task as done');
+    alert('Failed to complete task');
   }
 }
-
   const filteredTasks = tasks.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) || t.status.toLowerCase().includes(search.toLowerCase())
+    t.title.toLowerCase().includes(search.toLowerCase()) ||
+    t.status.toLowerCase().includes(search.toLowerCase())
   );
 
+const todoTasks = filteredTasks.filter(t => t.status === 'todo');
+const doneTasks = filteredTasks.filter(t => t.status === 'done');
+
+const visibleTodoTasks = search ? todoTasks : todoTasks.slice(visibleStartTodo, visibleStartTodo + visibleCount);
+const visibleDoneTasks = search ? doneTasks : doneTasks.slice(visibleStartDone, visibleStartDone + visibleCount);
+
+
+  if (!user) return <BoardContainer>Please log in to access your boards.</BoardContainer>;
+  if (user && user.role === null) return <BoardContainer>The owner needs to assign you a role to access boards.</BoardContainer>;
   if (loading) return <BoardContainer>Loading...</BoardContainer>;
 
-return (
-  <BoardContainer>
-    <BoardHeader>
-      <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
-      <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
-    </BoardHeader>
-
-    {isModalOpen && (
-      <Modal onClose={() => setIsModalOpen(false)}>
-        <CreateTaskForm onSubmit={handleCreateTask}>
-          <FormInput
-            placeholder="Task title"
-            value={newTask.title}
-            onChange={e => setNewTask({ ...newTask, title: e.target.value })}
-            required
-          />
-          <FormTextarea
-            placeholder="Task description"
-            value={newTask.description}
-            onChange={e =>
-              setNewTask({ ...newTask, description: e.target.value })
-            }
-          />
-          <FormSelect
-            value={newTask.priority}
-            onChange={e =>
-              setNewTask({
-                ...newTask,
-                priority: e.target.value as 'low' | 'medium' | 'high',
-              })
-            }
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+  return (
+    <BoardContainer>
+      <BoardHeader>
+        <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <FormSelect value={selectedBoard || ''} onChange={e => setSelectedBoard(e.target.value)}>
+            <option value="">Select board</option>
+            {boards.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
           </FormSelect>
-          <FormButton type="submit">Create Task</FormButton>
-        </CreateTaskForm>
-      </Modal>
+          <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
+          {user?.role === 'OWNER' && selectedBoard && <Button onClick={() => setManageOpen(true)}>Manage Members</Button>}
+        </div>
+      </BoardHeader>
+
+      {isModalOpen && (
+        <Modal onClose={() => setIsModalOpen(false)}>
+          <CreateTaskForm onSubmit={handleCreateTask}>
+            <FormInput placeholder="Task title" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} required />
+            <FormTextarea placeholder="Task description" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
+            <FormSelect value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </FormSelect>
+            <FormButton type="submit">Create Task</FormButton>
+          </CreateTaskForm>
+        </Modal>
+      )}
+
+    {manageOpen && selectedBoard && (
+      <ManageMembersModal 
+          boardId={selectedBoard!} 
+          onClose={() => setManageOpen(false)} 
+          onDone={() => loadBoards()} 
+      />
     )}
 
-<ColumnsWrapper>
-  <Column>
-    <ColumnHeader>To Do</ColumnHeader>
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2px' }}>
-    <button
-      onClick={() => setVisibleStartTodo(prev => Math.max(prev - visibleCount, 0))}
-      disabled={visibleStartTodo === 0}
-    >
-      ↑
-    </button>
-    <button
-      onClick={() =>
-        setVisibleStartTodo(prev =>
-          Math.min(
-            prev + visibleCount,
-            filteredTasks.filter(t => t.status === 'todo').length - visibleCount
-          )
-        )
-      }
-      disabled={visibleStartTodo + visibleCount >= filteredTasks.filter(t => t.status === 'todo').length}
-    >
-      ↓
-    </button>
-  </div>
-    <TaskList>
-      {filteredTasks
-        .filter(t => t.status === 'todo')
-        .slice(visibleStartTodo, visibleStartTodo + visibleCount)
-        .map(t => (
-          <TaskCard
-            key={t.id}
-            id={t.id}
-            title={t.title}
-            description={t.description || ''}
-            priority={t.priority}
-            status={t.status}
-            onComplete={() => handleCompleteTask(t.id)}  
-            onEdit={() => openEditModal(t)}
-            onDelete={() => handleDeleteTask(t.id)}
-          />
-      ))}
-    </TaskList>
-  </Column>
+      <ColumnsWrapper>
+        <Column>
+          <ColumnHeader>To Do</ColumnHeader>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-2px', marginTop: '-12px' }}>
+            <button onClick={() => setVisibleStartTodo(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartTodo === 0}>↑</button>
+            <button onClick={() => setVisibleStartTodo(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'todo').length - visibleCount))} disabled={visibleStartTodo + visibleCount >= filteredTasks.filter(t => t.status === 'todo').length}>↓</button>
+          </div>
+<TaskList>
+  {visibleTodoTasks.map(t => (
+    <TaskCard
+      key={t.id}
+      {...t}
+      onComplete={() => handleCompleteTask(t.id)}
+      onEdit={() => openEditModal(t)}
+      onDelete={() => handleDeleteTask(t.id)}
+    />
+  ))}
+</TaskList>
 
-<Column>
-  <ColumnHeader>Done</ColumnHeader>
+        </Column>
 
-  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2px' }}>
-    <button
-      onClick={() => setVisibleStartDone(prev => Math.max(prev - visibleCount, 0))}
-      disabled={visibleStartDone === 0}
-    >
-      ↑
-    </button>
-    <button
-      onClick={() =>
-        setVisibleStartDone(prev =>
-          Math.min(
-            prev + visibleCount,
-            filteredTasks.filter(t => t.status === 'done').length - visibleCount
-          )
-        )
-      }
-      disabled={visibleStartDone + visibleCount >= filteredTasks.filter(t => t.status === 'done').length}
-    >
-      ↓
-    </button>
-  </div>
+        <Column>
+          <ColumnHeader>Done</ColumnHeader>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-2px', marginTop: '-12px' }}>
+            <button onClick={() => setVisibleStartDone(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartDone === 0}>↑</button>
+            <button onClick={() => setVisibleStartDone(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'done').length - visibleCount))} disabled={visibleStartDone + visibleCount >= filteredTasks.filter(t => t.status === 'done').length}>↓</button>
+          </div>
+<TaskList>
+  {visibleDoneTasks.map(t => (
+    <TaskCard
+      key={t.id}
+      {...t}
+      onEdit={() => openEditModal(t)}
+      onDelete={() => handleDeleteTask(t.id)}
+    />
+  ))}
+</TaskList>
 
-  <TaskList>
-    {filteredTasks
-      .filter(t => t.status === 'done')
-      .slice(visibleStartDone, visibleStartDone + visibleCount)
-      .map(t => (
-        <TaskCard
-          key={t.id}
-          {...t}
-          onEdit={() => openEditModal(t)}
-          onDelete={() => handleDeleteTask(t.id)}
-        />
-      ))}
-  </TaskList>
-</Column>
+        </Column>
 
-<Column>
-  <ColumnHeader>Priorities</ColumnHeader>
-  <PriorityChart tasks={tasks} />
-</Column>
-</ColumnsWrapper>
+        <Column>
+          <ColumnHeader>Priorities</ColumnHeader>
+          <PriorityChart tasks={tasks} />
+        </Column>
+      </ColumnsWrapper>
 
-{editTaskModalOpen && selectedTask && (
-  <Modal onClose={closeEditModal}>
-    <CreateTaskForm
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleUpdateTask(selectedTask);
-      }}
-    >
-      <FormInput
-        placeholder="Task title"
-        value={selectedTask.title}
-        onChange={(e) =>
-          setSelectedTask({ ...selectedTask, title: e.target.value })
-        }
-        required
-      />
-      <FormTextarea
-        placeholder="Task description"
-        value={selectedTask.description || ''}
-        onChange={(e) =>
-          setSelectedTask({ ...selectedTask, description: e.target.value })
-        }
-      />
-      <FormSelect
-        value={selectedTask.priority}
-        onChange={(e) =>
-          setSelectedTask({
-            ...selectedTask,
-            priority: e.target.value as 'low' | 'medium' | 'high',
-          })
-        }
-      >
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </FormSelect>
-      <FormButton type="submit">Update Task</FormButton>
-    </CreateTaskForm>
-  </Modal>
-)}
-
-  </BoardContainer>
-);
+      {editTaskModalOpen && selectedTask && (
+        <Modal onClose={closeEditModal}>
+          <CreateTaskForm onSubmit={(e) => { e.preventDefault(); handleUpdateTask(selectedTask); }}>
+            <FormInput placeholder="Task title" value={selectedTask.title} onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })} required />
+            <FormTextarea placeholder="Task description" value={selectedTask.description || ''} onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })} />
+            <FormSelect value={selectedTask.priority} onChange={(e) => setSelectedTask({ ...selectedTask, priority: e.target.value as any })}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </FormSelect>
+            <FormButton type="submit">Update Task</FormButton>
+          </CreateTaskForm>
+        </Modal>
+      )}
+    </BoardContainer>
+  );
 };
 
 export default BoardPage;
