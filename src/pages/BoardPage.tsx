@@ -19,6 +19,7 @@ import TaskCard from '../components/TaskCard';
 import PriorityChart from '../components/PriorityChart';
 import { useAuth } from '../contexts/AuthContext';
 import ManageMembersModal from '../components/ManageMembersModal';
+import { CreateBoardModal } from '../components/CreateBoardModal';
 
 interface Task {
   id: string;
@@ -46,6 +47,7 @@ const BoardPage: React.FC = () => {
   const [editTaskModalOpen, setEditTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<NewTaskData>({ title: '', description: '', priority: 'low' });
+  const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
 
   const visibleCount = 3;
   const [visibleStartTodo, setVisibleStartTodo] = useState(0);
@@ -189,6 +191,13 @@ async function handleCompleteTask(taskId: string) {
     alert('Failed to complete task');
   }
 }
+
+function handleBoardCreated(board: { id: string; title: string }) {
+  setBoards(prev => [...prev, board]);
+  setSelectedBoard(board.id);
+}
+
+
   const filteredTasks = tasks.filter(t =>
     t.title.toLowerCase().includes(search.toLowerCase()) ||
     t.status.toLowerCase().includes(search.toLowerCase())
@@ -208,16 +217,27 @@ const visibleDoneTasks = search ? doneTasks : doneTasks.slice(visibleStartDone, 
   return (
     <BoardContainer>
       <BoardHeader>
-        <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <FormSelect value={selectedBoard || ''} onChange={e => setSelectedBoard(e.target.value)}>
-            <option value="">Select board</option>
-            {boards.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
-          </FormSelect>
-          <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
-          {user?.role === 'OWNER' && selectedBoard && <Button onClick={() => setManageOpen(true)}>Manage Members</Button>}
-        </div>
-      </BoardHeader>
+    <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {user?.role === 'OWNER' && (
+        <Button onClick={() => setIsBoardModalOpen(true)}>New Board</Button>
+      )}
+      <FormSelect value={selectedBoard || ''} onChange={e => setSelectedBoard(e.target.value)}>
+        <option value="">Select board</option>
+        {boards.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+      </FormSelect>
+      <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
+      {user?.role === 'OWNER' && selectedBoard && <Button onClick={() => setManageOpen(true)}>Manage Members</Button>}
+    </div>
+  </BoardHeader>
+
+  {isBoardModalOpen && (
+    <CreateBoardModal
+      onClose={() => setIsBoardModalOpen(false)}
+      onBoardCreated={handleBoardCreated}
+    />
+  )}
+
 
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
