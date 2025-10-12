@@ -82,19 +82,30 @@ const BoardPage: React.FC = () => {
     setEditTaskModalOpen(false);
   }
 
-  async function loadBoards() {
-    setLoading(true);
-    try {
-      const data = await fetchWithAuth('/boards');
-      setBoards(data || []);
-      if (data && data.length && !selectedBoard) setSelectedBoard(data[0].id);
-    } catch (err: any) {
-      console.error('Failed to load boards', err);
-      if (err.status === 401) alert('You must be logged in to access boards.');
-    } finally {
-      setLoading(false);
+async function loadBoards() {
+  setLoading(true);
+  try {
+    const data = await fetchWithAuth('/boards');
+    const boardsData = data || [];
+    setBoards(boardsData);
+
+    if (!boardsData.length) {
+      setSelectedBoard(null);
+      return;
     }
+
+    const hasCurrent = selectedBoard && boardsData.some((b: any) => b.id === selectedBoard);
+    if (!selectedBoard || !hasCurrent) {
+      setSelectedBoard(boardsData[0].id);
+    }
+  } catch (err: any) {
+    console.error('Failed to load boards', err);
+    if (err.status === 401) alert('You must be logged in to access boards.');
+  } finally {
+    setLoading(false);
   }
+}
+
 
   async function loadTasks(boardId?: string) {
     if (!boardId) {
@@ -111,9 +122,18 @@ const BoardPage: React.FC = () => {
     }
   }
 
-  useEffect(() => {
-    if (user) loadBoards();
-  }, [user]);
+useEffect(() => {
+  setBoards([]);
+  setSelectedBoard(null);
+
+  if (user) {
+    loadBoards();
+  } else {
+    setTasks([]);
+    setLoading(false);
+  }
+}, [user]);
+
 
   useEffect(() => {
     if (user && selectedBoard) loadTasks(selectedBoard);
@@ -162,24 +182,35 @@ async function handleDeleteTask(taskId: string) {
 }
 
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBoard) {
-      alert('Select a board first');
-      return;
-    }
-    try {
-      const createdTask = await fetchWithAuth('/tasks', {
-        method: 'POST',
-        body: JSON.stringify({ ...newTask, status: 'todo', boardId: selectedBoard })
-      });
-      setTasks(prev => [...prev, createdTask]);
-      setNewTask({ title: '', description: '', priority: 'low' });
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
-  };
+const handleCreateTask = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!selectedBoard) {
+    alert('Select a board first');
+    return;
+  }
+
+  const boardExists = boards.some(b => b.id === selectedBoard);
+  if (!boardExists) {
+    alert('Selected board is invalid. Please choose another.');
+    setSelectedBoard(null);
+    return;
+  }
+
+  try {
+    const createdTask = await fetchWithAuth('/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ ...newTask, status: 'todo', boardId: selectedBoard })
+    });
+    setTasks(prev => [...prev, createdTask]);
+    setNewTask({ title: '', description: '', priority: 'low' });
+    setIsModalOpen(false);
+  } catch (err) {
+    console.error('Failed to create task:', err);
+    alert('Failed to create task.');
+  }
+};
+
 
 async function handleCompleteTask(taskId: string) {
   if (!selectedBoard) return alert("Select a board first");
