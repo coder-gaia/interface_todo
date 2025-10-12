@@ -71,7 +71,7 @@ export const ModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 1000;
 `;
 
 export const ModalContent = styled.div`
@@ -80,15 +80,32 @@ export const ModalContent = styled.div`
   border-radius: ${borderRadius.lg};
   box-shadow: ${shadow.heavy};
   min-width: 400px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: ${spacing.sm};
+
+  @media(max-width: 480px) {
+    padding: 48px 24px 24px 24px; 
+    width: 95%;
+    gap: ${spacing.md};
+  }
 `;
 
 export const CloseButton = styled.button`
   position: absolute;
-  top: ${spacing.sm};
-  right: ${spacing.sm};
+  top: 0;
+  right: 16px;
   font-size: ${typography.fontSize.xl};
   background: none;
   border: none;
   cursor: pointer;
+  color: ${colors.text};
+  z-index: 20;
 `;
+

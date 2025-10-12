@@ -28,7 +28,7 @@ export function CreateBoardModal({ onClose, onBoardCreated }: Props) {
 
   return (
     <Modal onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop:'32px'}}>
         <FormInput
           placeholder="Board title"
           value={title}

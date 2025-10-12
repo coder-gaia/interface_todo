@@ -2,18 +2,25 @@ import styled from 'styled-components';
 import {borderRadius, spacing, typography } from '../styles/colors';
 
 export const HeaderContainer = styled.header`
-  width: 100vw;      
-  max-width: 100%;    
+  width: 100%;
   height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: ${borderRadius.md};
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  padding: 0 2rem;
+  padding: ${spacing.sm} 16px;
   background-color: #1B2A49;
   color: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.80);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  z-index: 1000;
+
+@media(max-width: 480px) {
+  flex-direction: column;
+  height: auto;
+  padding: ${spacing.sm};
+  gap: ${spacing.sm};
+  justify-content: center;
+  align-items: center; 
+}
 `;
 
 export const Logo = styled.div`
@@ -30,6 +37,11 @@ export const Logo = styled.div`
     padding: 4px 8px;
     border-radius: ${borderRadius.sm};
   }
+
+@media(max-width: 480px) {
+  width: auto; 
+  justify-content: center;
+}
 `;
 
 export const LogoText = styled.span`
@@ -41,6 +53,10 @@ export const UserSection = styled.div`
   display: flex;
   align-items: center;
   gap: ${spacing.sm};
+
+@media(max-width: 480px) {
+  width: auto; 
+  justify-content: center;
 `;
 
 export const UserInitials = styled.div`

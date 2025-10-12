@@ -13,7 +13,10 @@ import {
   Button,
   ColumnsWrapper,
   TaskList,
-  ColumnHeader
+  ColumnHeader,
+  BoardHeaderMobileWrapper,
+  ButtonGroup,
+  ScrollButtons
 } from './BoardPageStyles';
 import TaskCard from '../components/TaskCard';
 import PriorityChart from '../components/PriorityChart';
@@ -217,8 +220,10 @@ const visibleDoneTasks = search ? doneTasks : doneTasks.slice(visibleStartDone, 
   return (
     <BoardContainer>
       <BoardHeader>
-    <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
+        <BoardHeaderMobileWrapper>    
+      <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <ButtonGroup>
       {user?.role === 'OWNER' && (
         <Button onClick={() => setIsBoardModalOpen(true)}>New Board</Button>
       )}
@@ -227,8 +232,11 @@ const visibleDoneTasks = search ? doneTasks : doneTasks.slice(visibleStartDone, 
         {boards.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
       </FormSelect>
       <Button onClick={() => setIsModalOpen(true)}>New Task</Button>
-      {user?.role === 'OWNER' && selectedBoard && <Button onClick={() => setManageOpen(true)}>Manage Members</Button>}
+      {user?.role === 'OWNER' && selectedBoard && <Button onClick={() => setManageOpen(true)}>Manage Members</Button>
+      }
+      </ButtonGroup>
     </div>
+    </BoardHeaderMobileWrapper>
   </BoardHeader>
 
   {isBoardModalOpen && (
@@ -265,30 +273,31 @@ const visibleDoneTasks = search ? doneTasks : doneTasks.slice(visibleStartDone, 
       <ColumnsWrapper>
         <Column>
           <ColumnHeader>To Do</ColumnHeader>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-2px', marginTop: '-12px' }}>
-            <button onClick={() => setVisibleStartTodo(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartTodo === 0}>↑</button>
-            <button onClick={() => setVisibleStartTodo(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'todo').length - visibleCount))} disabled={visibleStartTodo + visibleCount >= filteredTasks.filter(t => t.status === 'todo').length}>↓</button>
-          </div>
-<TaskList>
-  {visibleTodoTasks.map(t => (
-    <TaskCard
-      key={t.id}
-      {...t}
-      onComplete={() => handleCompleteTask(t.id)}
-      onEdit={() => openEditModal(t)}
-      onDelete={() => handleDeleteTask(t.id)}
-    />
-  ))}
+<ScrollButtons>
+  <button onClick={() => setVisibleStartTodo(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartTodo === 0}>↑</button>
+  <button onClick={() => setVisibleStartTodo(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'todo').length - visibleCount))} disabled={visibleStartTodo + visibleCount >= filteredTasks.filter(t => t.status === 'todo').length}>↓</button>
+</ScrollButtons>
+      <TaskList>
+        {visibleTodoTasks.map(t => (
+        <TaskCard
+              key={t.id}
+              {...t}
+              onComplete={() => handleCompleteTask(t.id)}
+              onEdit={() => openEditModal(t)}
+              onDelete={() => handleDeleteTask(t.id)}
+              />
+            ))}
 </TaskList>
 
         </Column>
 
         <Column>
           <ColumnHeader>Done</ColumnHeader>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '-2px', marginTop: '-12px' }}>
-            <button onClick={() => setVisibleStartDone(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartDone === 0}>↑</button>
-            <button onClick={() => setVisibleStartDone(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'done').length - visibleCount))} disabled={visibleStartDone + visibleCount >= filteredTasks.filter(t => t.status === 'done').length}>↓</button>
-          </div>
+<ScrollButtons>
+  <button onClick={() => setVisibleStartDone(prev => Math.max(prev - visibleCount, 0))} disabled={visibleStartDone === 0}>↑</button>
+  <button onClick={() => setVisibleStartDone(prev => Math.min(prev + visibleCount, filteredTasks.filter(t => t.status === 'done').length - visibleCount))} disabled={visibleStartDone + visibleCount >= filteredTasks.filter(t => t.status === 'done').length}>↓</button>
+</ScrollButtons>
+
 <TaskList>
   {visibleDoneTasks.map(t => (
     <TaskCard

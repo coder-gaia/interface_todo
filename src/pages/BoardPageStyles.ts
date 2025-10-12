@@ -109,7 +109,7 @@ export const CreateTaskForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${spacing.sm};
-  margin-top: ${spacing.md};
+  margin-top: 24px;
   padding: ${spacing.md};
   background: ${colors.secondary};
   border-radius: ${borderRadius.md};
@@ -150,5 +150,51 @@ export const FormButton = styled.button`
 
   &:hover {
     opacity: 0.9;
+  }
+`;
+
+export const BoardHeaderMobileWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${spacing.xl};
+  width: 100%;
+  align-items: center;
+
+  @media(min-width: 481px) {
+    flex-direction: row;
+    gap: ${spacing.md};
+    align-items: center;
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: ${spacing.sm};
+  flex-wrap: wrap;
+  justify-content: center;
+
+  @media(min-width: 481px) {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+`;
+
+export const ScrollButtons = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: ${spacing.sm};
+  margin: -8px 0 4px 0;
+
+  button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: ${colors.text};
+  }
+
+  button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 `;
