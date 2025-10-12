@@ -38,11 +38,11 @@ Permite criar boards (para owners), adicionar tasks, gerenciar tarefas e colabor
 ```
 interface_todo/
 ├── src/
-│   ├── components/       # Componentes reutilizáveis
-│   ├── contexts/         # Contextos de estado (Auth, Boards, Tasks)
-│   ├── pages/            # Páginas principais (BoardPage, Login, Register)
-│   ├── services/         # Conexão com a API e funções de fetch
-│   ├── styles/           # Styled-components globais e específicos
+│   ├── components/
+│   ├── contexts/
+│   ├── pages/
+│   ├── services/
+│   ├── styles/
 │   ├── App.tsx
 │   ├── Main.tsx
 │   ├── App.css
