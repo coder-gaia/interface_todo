@@ -7,6 +7,7 @@ export const BoardContainer = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  color: #ffff;
 `;
 
 export const BoardHeader = styled.div`

@@ -40,7 +40,7 @@ export default function LoginModal({ onClose }: Props) {
   }
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} hideCloseButton={true}>
       <ToggleContainer>
         <ToggleButton active={activeTab === 'register'} onClick={() => setActiveTab('register')}>Register User</ToggleButton>
         <ToggleButton active={activeTab === 'login'} onClick={() => setActiveTab('login')}>Login</ToggleButton>
