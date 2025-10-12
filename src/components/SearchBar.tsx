@@ -12,7 +12,7 @@ function SearchBar({ value, onChange }: SearchBarProps) {
     <SearchWrapper>
       <FaSearch style={{ marginRight: '8px', color: '#888' }} />
       <Input
-        placeholder="Search by title or status"
+        placeholder="Search by title or status (todo, done)"
         value={value}
         onChange={onChange}
       />
