@@ -9,7 +9,7 @@
 
 ## 🎬 Demo
 
-![Preview da Interface](./assets/interface.png)
+![Preview da Interface](./assets/demo.png)
 
 ---
 
